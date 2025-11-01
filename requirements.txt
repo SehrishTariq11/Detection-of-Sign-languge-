@@ -1,0 +1,8 @@
+ultralytics==8.3.22
+opencv-python
+matplotlib
+numpy
+Pillow
+streamlit
+pyyaml
+tqdm
