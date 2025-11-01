@@ -1,8 +1,18 @@
-ultralytics==8.3.22
-opencv-python
-matplotlib
-numpy
+# YOLOv8 & dependencies
+ultralytics>=8.0.100
+torch
+torchvision
+torchaudio
+
+# Image & Video Processing
+opencv-python-headless
 Pillow
+numpy
+
+# Web App
 streamlit
-pyyaml
-tqdm
+
+# Optional: For file handling
+tempfile
+
+
