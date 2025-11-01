@@ -2,9 +2,9 @@ import streamlit as st
 from ultralytics import YOLO
 from PIL import Image
 import tempfile
-import cv2
 import numpy as np
 import os
+import cv2
 
 # -----------------------------
 # Streamlit UI Setup
@@ -91,3 +91,4 @@ elif option == "🎥 Live Camera":
 
 st.markdown("---")
 st.caption("Developed with ❤️ using YOLOv8 and Streamlit")
+
