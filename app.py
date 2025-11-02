@@ -74,20 +74,46 @@ if option == "📸 Image Upload" and model:
 # 🎥 LIVE CAMERA
 # -----------------------------
 elif option == "🎥 Live Camera" and model:
-    st.info("🎦 Capture a photo using your webcam for detection.")
-    cam_image = st.camera_input("Take a photo")
+    st.info("🎦 Click 'Start Detection' to begin live sign detection using your webcam.")
+    start_button = st.button("▶️ Start Detection")
 
-    if cam_image:
-        image = Image.open(cam_image).convert("RGB")
-        results = model(image)
-        annotated = results[0].plot()
-        st.image(annotated, caption="🔍 Detection Result", use_container_width=True)
+    if start_button:
+        cap = cv2.VideoCapture(0)  # open webcam
+        stframe = st.empty()       # placeholder for frames
+        label_box = st.empty()     # placeholder for live text
 
-        labels = extract_labels(results)
-        if labels:
-            final_prediction = ", ".join(labels)
-        else:
-            final_prediction = "No sign detected."
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                st.warning("⚠️ Cannot access camera.")
+                break
+
+            # YOLO prediction
+            results = model(frame)
+            annotated_frame = results[0].plot()
+
+            # Extract detected labels
+            labels = extract_labels(results)
+            if labels:
+                final_prediction = ", ".join(labels)
+            else:
+                final_prediction = "No sign detected."
+
+            # Display video and detected text
+            stframe.image(annotated_frame, channels="BGR", use_container_width=True)
+            label_box.markdown(f"### 🔤 **Detected Letter(s):** {final_prediction}")
+
+            # Small delay to control frame rate
+            time.sleep(0.05)
+
+            # Stop loop if user presses Stop
+            stop = st.button("⏹️ Stop Detection")
+            if stop:
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
+
 
 # -----------------------------
 # 🧾 FINAL DETECTED LETTER BOX
@@ -95,6 +121,7 @@ elif option == "🎥 Live Camera" and model:
 st.markdown("---")
 st.subheader("🔤 Detected Letter(s)")
 st.text_area("Model Prediction:", final_prediction if final_prediction else "No input yet.")
+
 
 
 
