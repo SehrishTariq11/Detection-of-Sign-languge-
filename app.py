@@ -3,13 +3,22 @@ from ultralytics import YOLO
 from PIL import Image
 import numpy as np
 import os
-import cv2
+import socket
 
 # -----------------------------
 # Streamlit UI Setup
 # -----------------------------
 st.set_page_config(page_title="ASL Detection", page_icon="🖐️", layout="centered")
 st.title("🖐️ ASL (American Sign Language) Detection using YOLOv8")
+
+# -----------------------------
+# Detect if running on Streamlit Cloud
+# -----------------------------
+def is_running_on_cloud():
+    hostname = socket.gethostname().lower()
+    return "streamlit" in hostname or os.getenv("STREAMLIT_RUNTIME") is not None
+
+on_cloud = is_running_on_cloud()
 
 # -----------------------------
 # Load YOLOv8 Model
@@ -26,14 +35,18 @@ else:
 # -----------------------------
 # Input Options
 # -----------------------------
-st.subheader("🎥 Choose Input Type")
-option = st.radio("Select input source:", ["📸 Image Upload", "🎥 Live Camera"])
+if on_cloud:
+    st.subheader("🎥 Choose Input Type")
+    option = st.radio("Select input source:", ["📸 Image Upload"])
+    st.info("📹 Live Camera mode is disabled on Streamlit Cloud due to camera access restrictions.")
+else:
+    st.subheader("🎥 Choose Input Type")
+    option = st.radio("Select input source:", ["📸 Image Upload", "🎥 Live Camera"])
 
 # -----------------------------
 # Function to extract detected labels
 # -----------------------------
 def extract_labels(results):
-    # Get names and boxes safely from YOLO results
     result = results[0]
     names = result.names
     boxes = result.boxes
@@ -63,7 +76,6 @@ if option == "📸 Image Upload" and model:
 
         st.image(annotated, caption="🔍 Detection Result", use_container_width=True)
 
-        # Get detected class names
         labels = extract_labels(results)
         if labels:
             final_prediction = ", ".join(labels)
@@ -71,10 +83,10 @@ if option == "📸 Image Upload" and model:
             final_prediction = "No sign detected."
 
 # -----------------------------
-# 🎥 LIVE CAMERA
+# 🎥 LIVE CAMERA (Local Only)
 # -----------------------------
-elif option == "🎥 Live Camera" and model:
-    st.info("🎦 Capture a photo using your webcam for detection.")
+elif option == "🎥 Live Camera" and model and not on_cloud:
+    st.info("🎦 Use your webcam for live detection.")
     cam_image = st.camera_input("Take a photo")
 
     if cam_image:
@@ -95,6 +107,3 @@ elif option == "🎥 Live Camera" and model:
 st.markdown("---")
 st.subheader("🔤 Detected Letter(s)")
 st.text_area("Model Prediction:", final_prediction if final_prediction else "No input yet.")
-
-  
-     
