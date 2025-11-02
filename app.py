@@ -2,8 +2,8 @@ import streamlit as st
 from ultralytics import YOLO
 from PIL import Image
 import numpy as np
-import os
 import cv2
+import os
 
 # -----------------------------
 # Streamlit UI Setup
@@ -24,16 +24,9 @@ else:
     st.success("✅ Model loaded successfully!")
 
 # -----------------------------
-# Input Options
-# -----------------------------
-st.subheader("🎥 Choose Input Type")
-option = st.radio("Select input source:", ["📸 Image Upload", "🎥 Live Camera"])
-
-# -----------------------------
 # Function to extract detected labels
 # -----------------------------
 def extract_labels(results):
-    # Get names and boxes safely from YOLO results
     result = results[0]
     names = result.names
     boxes = result.boxes
@@ -50,6 +43,12 @@ def extract_labels(results):
 final_prediction = ""
 
 # -----------------------------
+# Input Options
+# -----------------------------
+st.subheader("🎥 Choose Input Type")
+option = st.radio("Select input source:", ["📸 Image Upload", "🎥 Live Camera", "📹 Real-Time Video (Local only)"])
+
+# -----------------------------
 # 📸 IMAGE UPLOAD
 # -----------------------------
 if option == "📸 Image Upload" and model:
@@ -60,10 +59,8 @@ if option == "📸 Image Upload" and model:
 
         results = model(image)
         annotated = results[0].plot()
-
         st.image(annotated, caption="🔍 Detection Result", use_container_width=True)
 
-        # Get detected class names
         labels = extract_labels(results)
         if labels:
             final_prediction = ", ".join(labels)
@@ -71,49 +68,66 @@ if option == "📸 Image Upload" and model:
             final_prediction = "No sign detected."
 
 # -----------------------------
-# 🎥 LIVE CAMERA
+# 🎥 LIVE CAMERA (Streamlit camera)
 # -----------------------------
 elif option == "🎥 Live Camera" and model:
-    st.info("🎦 Click 'Start Detection' to begin live sign detection using your webcam.")
-    start_button = st.button("▶️ Start Detection")
+    st.info("🎦 Capture a photo using your webcam for detection.")
+    cam_image = st.camera_input("Take a photo")
 
-    if start_button:
-        cap = cv2.VideoCapture(0)  # open webcam
-        stframe = st.empty()       # placeholder for frames
-        label_box = st.empty()     # placeholder for live text
+    if cam_image:
+        image = Image.open(cam_image).convert("RGB")
+        results = model(image)
+        annotated = results[0].plot()
+        st.image(annotated, caption="🔍 Detection Result", use_container_width=True)
+
+        labels = extract_labels(results)
+        if labels:
+            final_prediction = ", ".join(labels)
+        else:
+            final_prediction = "No sign detected."
+
+# -----------------------------
+# 📹 REAL-TIME VIDEO (Local use only)
+# -----------------------------
+elif option == "📹 Real-Time Video (Local only)" and model:
+    st.warning("⚠️ This mode works only on local Streamlit (not Streamlit Cloud).")
+
+    start = st.button("Start Detection")
+
+    if start:
+        cap = cv2.VideoCapture(0)
+        stframe = st.empty()  # create a video frame placeholder
 
         while True:
             ret, frame = cap.read()
             if not ret:
-                st.warning("⚠️ Cannot access camera.")
+                st.error("❌ Failed to access camera.")
                 break
 
-            # YOLO prediction
             results = model(frame)
             annotated_frame = results[0].plot()
-
-            # Extract detected labels
             labels = extract_labels(results)
+
+            # Show annotated frame
+            stframe.image(annotated_frame, channels="BGR", use_container_width=True)
+
+            # Show detected letters
             if labels:
                 final_prediction = ", ".join(labels)
+                st.markdown(f"### 🔤 Detected: **{final_prediction}**")
             else:
-                final_prediction = "No sign detected."
+                st.markdown("### 🔤 No sign detected.")
 
-            # Display video and detected text
-            stframe.image(annotated_frame, channels="BGR", use_container_width=True)
-            label_box.markdown(f"### 🔤 **Detected Letter(s):** {final_prediction}")
-
-            # Small delay to control frame rate
-            time.sleep(0.05)
-
-            # Stop loop if user presses Stop
-            stop = st.button("⏹️ Stop Detection")
+            # Stop loop if user clicks 'Stop'
+            stop = st.button("Stop")
             if stop:
                 break
 
         cap.release()
-        cv2.destroyAllWindows()
-
+        try:
+            cv2.destroyAllWindows()
+        except cv2.error:
+            pass
 
 # -----------------------------
 # 🧾 FINAL DETECTED LETTER BOX
@@ -121,6 +135,7 @@ elif option == "🎥 Live Camera" and model:
 st.markdown("---")
 st.subheader("🔤 Detected Letter(s)")
 st.text_area("Model Prediction:", final_prediction if final_prediction else "No input yet.")
+
 
 
 
