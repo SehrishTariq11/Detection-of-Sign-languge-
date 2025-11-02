@@ -29,14 +29,24 @@ else:
 st.subheader("🎥 Choose Input Type")
 option = st.radio("Select input source:", ["📸 Image Upload", "🎥 Live Camera"])
 
+# -----------------------------
 # Function to extract detected labels
+# -----------------------------
 def extract_labels(results):
-    names = results.names
-    boxes = results[0].boxes
-    detected_labels = [names[int(cls)] for cls in boxes.cls]
+    # Get names and boxes safely from YOLO results
+    result = results[0]
+    names = result.names
+    boxes = result.boxes
+    detected_labels = []
+
+    if boxes is not None and len(boxes) > 0:
+        for cls in boxes.cls:
+            detected_labels.append(names[int(cls)])
     return list(set(detected_labels))  # unique labels
 
+# -----------------------------
 # Variable to store final detected text
+# -----------------------------
 final_prediction = ""
 
 # -----------------------------
@@ -85,3 +95,6 @@ elif option == "🎥 Live Camera" and model:
 st.markdown("---")
 st.subheader("🔤 Detected Letter(s)")
 st.text_area("Model Prediction:", final_prediction if final_prediction else "No input yet.")
+
+
+
